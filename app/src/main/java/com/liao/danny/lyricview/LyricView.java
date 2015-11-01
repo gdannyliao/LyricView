@@ -5,7 +5,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Scroller;
 
 import java.util.ArrayList;
 
@@ -23,6 +25,7 @@ public class LyricView extends View {
     private int mPaddingTop = 20;
     private Paint mNormalPaint;
     private Paint mHeightLightPaint;
+    private Scroller mScroller;
 
     public LyricView(Context context) {
         super(context);
@@ -49,8 +52,10 @@ public class LyricView extends View {
         mHeightLightPaint.setColor(Color.RED);
         mHeightLightPaint.setAntiAlias(true);
         mHeightLightPaint.setTextSize(mHeightLightTextSize);
+
+        mScroller = new Scroller(getContext());
     }
-    public void setmLyrics(ArrayList<Lyric> list) {
+    public void setLyrics(ArrayList<Lyric> list) {
         if (list == null) {
             throw new IllegalArgumentException("lyric list is null");
         }
@@ -64,6 +69,50 @@ public class LyricView extends View {
         int measuredHeight = getMeasuredHeight();
         mMaxLine = measuredHeight / mLineHeight;
         mHeightLightLine = mMaxLine / 2;
+    }
+
+//    @Override
+//    public void computeScroll() {
+//        super.computeScroll();
+//        Scroller scroller = mScroller;
+//        if (scroller.computeScrollOffset()) {
+//            scrollTo(scroller.getCurrX(), scroller.getCurrY());
+//            invalidate();
+//        }
+//    }
+
+    private void computeLineOffset(float y) {
+        float v = y - starty;
+        int offset = (int) (Math.abs(v) / mLineHeight);
+        if (v > 0) {
+            mTopLine = mTopLine - offset ;
+        } else {
+            mTopLine = mTopLine + offset ;
+        }
+        postInvalidate();
+    }
+    private float starty;
+    private float lasty;
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float y = event.getY();
+        float deltay = lasty - y;
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                starty = y;
+                lasty = starty;
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                scrollBy(0, (int) deltay);
+                break;
+            case MotionEvent.ACTION_UP:
+                computeLineOffset(y);
+                starty = 0;
+                break;
+        }
+        lasty = y;
+        return super.onTouchEvent(event);
     }
 
     @Override
@@ -84,7 +133,7 @@ public class LyricView extends View {
 
         for (int i = 0; i < maxLine; i++) {
             int j = topLine + i;
-            if (j >= lyrics.size()) break;
+            if (j >= lyrics.size() || j < 0) continue;
             Lyric lyric = lyrics.get(j);
             if (j == heightLightLine) {
                 canvas.drawText(lyric.getText(), 0, paddingTop + i * lineHeight, heightLightPaint);

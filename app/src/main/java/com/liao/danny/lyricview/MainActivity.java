@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (lyricList != null) {
                     LyricView lyricView = (LyricView) findViewById(R.id.lyricView);
-                    lyricView.setmLyrics(lyricList);
+                    lyricView.setLyrics(lyricList);
                 }
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
