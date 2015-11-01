@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Scroller;
@@ -71,25 +72,30 @@ public class LyricView extends View {
         mHeightLightLine = mMaxLine / 2;
     }
 
-//    @Override
-//    public void computeScroll() {
-//        super.computeScroll();
-//        Scroller scroller = mScroller;
-//        if (scroller.computeScrollOffset()) {
-//            scrollTo(scroller.getCurrX(), scroller.getCurrY());
-//            invalidate();
-//        }
-//    }
+    @Override
+    public void computeScroll() {
+        super.computeScroll();
+        Scroller scroller = mScroller;
+        if (scroller.computeScrollOffset()) {
+            scrollTo(scroller.getCurrX(), scroller.getCurrY());
+            invalidate();
+        }
+    }
 
-    private void computeLineOffset(float y) {
+    private float computeLineOffset(float y) {
         float v = y - starty;
         int offset = (int) (Math.abs(v) / mLineHeight);
+        Log.d("LyricView", "computeLineOffset() called with: " + "v = [" + v + "]");
+        //当偏移量达到mLineHeight时，将偏移量缩小mLineHeight个长度，同时mTopLine相应的增加或减少一行
         if (v > 0) {
-            mTopLine = mTopLine - offset ;
+            mTopLine -= offset;
+            v -= offset * mLineHeight;
         } else {
-            mTopLine = mTopLine + offset ;
+            mTopLine += offset;
+            v += offset * mLineHeight;
         }
-        postInvalidate();
+        Log.d("LyricView", "computeLineOffset() returned: " + v);
+        return v;
     }
     private float starty;
     private float lasty;
@@ -104,10 +110,9 @@ public class LyricView extends View {
                 lasty = starty;
                 return true;
             case MotionEvent.ACTION_MOVE:
-                scrollBy(0, (int) deltay);
+                scrollTo(0, (int) computeLineOffset(y));
                 break;
             case MotionEvent.ACTION_UP:
-                computeLineOffset(y);
                 starty = 0;
                 break;
         }
@@ -136,6 +141,7 @@ public class LyricView extends View {
             if (j >= lyrics.size() || j < 0) continue;
             Lyric lyric = lyrics.get(j);
             if (j == heightLightLine) {
+                //FIXME 滚出边界时间隔太大的问题
                 canvas.drawText(lyric.getText(), 0, paddingTop + i * lineHeight, heightLightPaint);
             } else {
                 canvas.drawText(lyric.getText(), 0, paddingTop + i* lineHeight, normalPaint);
